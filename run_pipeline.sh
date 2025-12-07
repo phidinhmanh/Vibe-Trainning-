@@ -85,41 +85,39 @@ fi
 check_data() {
     log_info "Checking data files..."
     
-    # Detect data directory
-    if [ -d "../kaggle/input/Train" ]; then
-        echo "[INFO] Detected Kaggle environment"
-        DATA_ROOT="../kaggle/input"
-        TRAIN_DIR="$DATA_ROOT/Train"
-        TEST_DIR="$DATA_ROOT/Test"
-        IA_FILE="$DATA_ROOT/IA.tsv"
-    else
-        echo "[INFO] Using local environment (data/raw)"
-        DATA_ROOT="data/raw"
-        TRAIN_DIR="$DATA_ROOT"
-        TEST_DIR="$DATA_ROOT"
-        IA_FILE="$DATA_ROOT/cafa-6-protein-function-prediction/IA.tsv"
-        # Handle flattened structure if files are directly in data/raw
-        if [ -f "$DATA_ROOT/IA.tsv" ]; then
-             IA_FILE="$DATA_ROOT/IA.tsv"
-        fi
-    fi
-
-    REQUIRED_FILES=(
-        "$TRAIN_DIR/train_sequences.fasta"
-        "$TRAIN_DIR/train_terms.tsv"
-        "$TEST_DIR/testsuperset.fasta"
-    )
+    # Robust file finding using 'find'
+    # We search in ../kaggle/input first, then data/raw
     
-    MISSING=false
-    for file in "${REQUIRED_FILES[@]}"; do
-        if [ ! -f "$file" ]; then
-            log_error "Missing: $file"
-            MISSING=true
+    find_file() {
+        local name=$1
+        local found=""
+        
+        # Check Kaggle first
+        if [ -d "../kaggle/input" ]; then
+            found=$(find ../kaggle/input -name "$name" | head -n 1)
         fi
-    done
+        
+        # Check local if not found
+        if [ -z "$found" ] && [ -d "data/raw" ]; then
+            found=$(find data/raw -name "$name" | head -n 1)
+        fi
+        
+        echo "$found"
+    }
+    
+    TRAIN_SEQ=$(find_file "train_sequences.fasta")
+    TRAIN_TERMS=$(find_file "train_terms.tsv")
+    TEST_SEQ=$(find_file "testsuperset.fasta")
+    
+    REQ_FILES=("$TRAIN_SEQ" "$TRAIN_TERMS" "$TEST_SEQ")
+    MISSING=false
+    
+    if [ -z "$TRAIN_SEQ" ]; then log_error "Missing: train_sequences.fasta"; MISSING=true; else log_info "Found: $TRAIN_SEQ"; fi
+    if [ -z "$TRAIN_TERMS" ]; then log_error "Missing: train_terms.tsv"; MISSING=true; else log_info "Found: $TRAIN_TERMS"; fi
+    if [ -z "$TEST_SEQ" ]; then log_error "Missing: testsuperset.fasta"; MISSING=true; else log_info "Found: $TEST_SEQ"; fi
     
     if [ "$MISSING" = true ]; then
-        log_error "Data not found in either ../kaggle/input or data/raw"
+        log_error "Critical data files not found in ../kaggle/input or data/raw"
         exit 1
     fi
     

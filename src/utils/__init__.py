@@ -82,52 +82,49 @@ def load_config(config_path: str) -> Dict[str, Any]:
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
-    # Automatic path fix for Kaggle vs Local
-    # If we are in Kaggle or have the directory structure, override the config paths
-    kaggle_input = Path("../kaggle/input")
-    kaggle_train = kaggle_input / "Train"
+    # Robust data discovery using os.walk
+    # We look for key files in potential root directories
+    potential_roots = ["/kaggle/input", "data/raw"]
+    found_root = None
 
-    # Check if ../kaggle/input/Train exists
-    if kaggle_train.exists():
-        print(f"[INFO] Detected Kaggle input directory at {kaggle_input}")
-        config["data"]["raw_dir"] = str(kaggle_input)
-        config["data"]["train_sequences"] = str(kaggle_train / "train_sequences.fasta")
-        config["data"]["train_terms"] = str(kaggle_train / "train_terms.tsv")
-        config["data"]["train_taxonomy"] = str(kaggle_train / "train_taxonomy.tsv")
-        config["data"]["test_sequences"] = str(
-            kaggle_input / "Test" / "testsuperset.fasta"
+    # Maps config keys to filenames we need to find
+    required_files = {
+        "train_sequences": "train_sequences.fasta",
+        "train_terms": "train_terms.tsv",
+        "train_taxonomy": "train_taxonomy.tsv",
+        "test_sequences": "testsuperset.fasta",
+        "go_obo": "go-basic.obo",
+        "ia_weights": "IA.tsv",
+    }
+
+    found_paths = {}
+
+    for root in potential_roots:
+        if os.path.exists(root):
+            print(f"[INFO] Searching for data in {root}...")
+            # Walk through the directory to find files
+            for dirpath, _, filenames in os.walk(root):
+                for filename in filenames:
+                    for key, target_name in required_files.items():
+                        if key not in found_paths and filename == target_name:
+                            full_path = os.path.join(dirpath, filename)
+                            found_paths[key] = full_path
+                            # If we found a file, this root is likely the correct one
+                            if found_root is None:
+                                found_root = root
+                                config["data"]["raw_dir"] = root
+
+    # Update config with found paths
+    if found_paths:
+        print(
+            f"[INFO] Found {len(found_paths)}/{len(required_files)} required data files"
         )
-        config["data"]["go_obo"] = str(kaggle_train / "go-basic.obo")
-        config["data"]["ia_weights"] = str(kaggle_input / "IA.tsv")
+        for key, path in found_paths.items():
+            config["data"][key] = path
+            print(f"  - {key}: {path}")
     else:
-        # Fallback to local data/raw if we are not in Kaggle
-        # This is useful if the config defaults to Kaggle but we are running locally
-        local_raw = Path("data/raw")
-        current_raw = Path(config["data"].get("raw_dir", "data/raw"))
-
-        if local_raw.exists() and not current_raw.exists():
-            print(
-                f"[INFO] Configured raw_dir {current_raw} not found, falling back to local {local_raw}"
-            )
-            config["data"]["raw_dir"] = str(local_raw)
-            config["data"]["train_sequences"] = str(local_raw / "train_sequences.fasta")
-            config["data"]["train_terms"] = str(local_raw / "train_terms.tsv")
-            config["data"]["train_taxonomy"] = str(local_raw / "train_taxonomy.tsv")
-            config["data"]["test_sequences"] = str(local_raw / "testsuperset.fasta")
-            # Updated resources layout vs old layout check could go here, but assuming standard
-            config["data"]["go_obo"] = str(Path("resources/go-basic.obo"))
-            config["data"]["ia_weights"] = str(Path("resources/IA.tsv"))
-
-            # Check if resources exist, if not, maybe they are in data/raw (old layout)
-            if (
-                not Path(config["data"]["go_obo"]).exists()
-                and (local_raw / "go-basic.obo").exists()
-            ):
-                config["data"]["go_obo"] = str(local_raw / "go-basic.obo")
-            if (
-                not Path(config["data"]["ia_weights"]).exists()
-                and (local_raw / "IA.tsv").exists()
-            ):
-                config["data"]["ia_weights"] = str(local_raw / "IA.tsv")
+        print(
+            "[WARNING] No data files found in standard locations. Using default config paths."
+        )
 
     return config

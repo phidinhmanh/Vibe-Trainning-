@@ -11,7 +11,7 @@ from src.features.physchem import extract_features
 from src.models.baseline_lr import BaselineLR
 from src.models.knn_transfer import KNNTransfer
 from src.score.scorer import CafaScorer
-from src.utils import set_seed
+from src.utils import set_seed, load_config
 
 print("=" * 60)
 print("CAFA 6 QUICK DEBUG TEST")
@@ -19,19 +19,13 @@ print("=" * 60)
 
 set_seed(42)
 
-import os
-from pathlib import Path
+# Load config to get robust data paths
+config = load_config("configs/default.yaml")
+seq_path = config["data"]["train_sequences"]
+term_path = config["data"]["train_terms"]
 
-# Path fallback logic
-kaggle_input = Path("../kaggle/input")
-if kaggle_input.exists():
-    print(f"[INFO] Using Kaggle data at {kaggle_input}")
-    seq_path = kaggle_input / "Train/train_sequences.fasta"
-    term_path = kaggle_input / "Train/train_terms.tsv"
-else:
-    print("[INFO] Using local data at data/raw")
-    seq_path = "data/raw/train_sequences.fasta"
-    term_path = "data/raw/train_terms.tsv"
+print(f"[INFO] Using sequences from: {seq_path}")
+print(f"[INFO] Using terms from: {term_path}")
 
 # 1. Load small subset of data
 print("\n[1/6] Loading data (first 500 sequences)...")
