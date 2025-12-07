@@ -29,8 +29,8 @@ print(f"[INFO] Using terms from: {term_path}")
 
 # 1. Load small subset of data
 print("\n[1/6] Loading data (first 500 sequences)...")
-sequences = load_sequences(str(seq_path))
-terms_df = load_terms(str(term_path))
+sequences = load_sequences(seq_path)
+terms_df = load_terms(term_path)
 
 # Take only first 500 sequences for quick test
 protein_ids = list(sequences.keys())[:500]

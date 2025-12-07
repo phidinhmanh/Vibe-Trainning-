@@ -92,9 +92,14 @@ check_data() {
         local name=$1
         local found=""
         
-        # Check Kaggle first
-        if [ -d "../kaggle/input" ]; then
-            found=$(find ../kaggle/input -name "$name" | head -n 1)
+        # Check Kaggle first (Absolute path)
+        if [ -d "/kaggle/input" ]; then
+            found=$(find /kaggle/input -name "$name" | head -n 1)
+        fi
+
+        # Check relative ../input or ../kaggle/input
+        if [ -z "$found" ] && [ -d "../input" ]; then
+            found=$(find ../input -name "$name" | head -n 1)
         fi
         
         # Check local if not found
@@ -198,7 +203,9 @@ import numpy as np
 import json
 
 print('Loading sequences...')
-seqs = load_sequences('data/raw/train_sequences.fasta')
+from src.utils import load_config
+config = load_config('configs/default.yaml')
+seqs = load_sequences(config['data']['train_sequences'])
 print(f'Loaded {len(seqs)} sequences')
 
 print('Clustering with MinHash LSH (fast approximate clustering)...')
@@ -270,8 +277,10 @@ import os
 set_seed(42)
 
 print('Loading data...')
-sequences = load_sequences('data/raw/train_sequences.fasta')
-terms_df = load_terms('data/raw/train_terms.tsv')
+from src.utils import load_config
+config = load_config('configs/default.yaml')
+sequences = load_sequences(config['data']['train_sequences'])
+terms_df = load_terms(config['data']['train_terms'])
 protein_ids = list(sequences.keys())
 
 print('Preparing labels...')
@@ -359,8 +368,10 @@ import os
 set_seed(42)
 
 print('Loading data...')
-sequences = load_sequences('data/raw/train_sequences.fasta')
-terms_df = load_terms('data/raw/train_terms.tsv')
+from src.utils import load_config
+config = load_config('configs/default.yaml')
+sequences = load_sequences(config['data']['train_sequences'])
+terms_df = load_terms(config['data']['train_terms'])
 protein_ids = list(sequences.keys())
 
 print('Preparing labels...')
@@ -436,7 +447,9 @@ from src.models.knn_transfer import KNNTransfer
 import os
 
 print('Loading test sequences...')
-test_seqs = load_sequences('data/raw/testsuperset.fasta', parse_uniprot=False)
+from src.utils import load_config
+config = load_config('configs/default.yaml')
+test_seqs = load_sequences(config['data']['test_sequences'], parse_uniprot=False)
 test_ids = list(test_seqs.keys())
 test_list = [test_seqs[pid] for pid in test_ids]
 print(f'Loaded {len(test_seqs)} test sequences')

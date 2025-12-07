@@ -84,7 +84,8 @@ def load_config(config_path: str) -> Dict[str, Any]:
 
     # Robust data discovery using os.walk
     # We look for key files in potential root directories
-    potential_roots = ["/kaggle/input", "data/raw"]
+    # Added /kaggle/input (absolute) and ../input (relative sibling) coverage
+    potential_roots = ["/kaggle/input", "../input", "../kaggle/input", "data/raw"]
     found_root = None
 
     # Maps config keys to filenames we need to find
