@@ -1,0 +1,42 @@
+# CAFA 6 Protein Function Prediction
+# ===================================
+
+# Core dependencies
+numpy>=1.21.0
+pandas>=1.3.0
+scipy>=1.7.0
+scikit-learn>=1.0.0
+tqdm>=4.62.0
+PyYAML>=6.0
+
+# Feature extraction
+biopython>=1.79
+
+# Optimization
+optuna>=3.0.0
+
+# Model persistence
+joblib>=1.1.0
+
+# Visualization (optional)
+matplotlib>=3.5.0
+seaborn>=0.11.0
+
+# Logging (optional)
+mlflow>=2.0.0
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=3.0.0
+
+# Code quality (dev)
+black>=22.0.0
+flake8>=4.0.0
+mypy>=0.950
+
+# Optional: FAISS for large-scale KNN
+# faiss-cpu>=1.7.0  # or faiss-gpu for GPU support
+
+# Optional: Deep learning embeddings
+# torch>=1.12.0
+# transformers>=4.20.0

@@ -1,0 +1,55 @@
+# CAFA 6 Configuration - Default Settings
+# =========================================
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  folds: 5
+  train_sequences: data/raw/train_sequences.fasta
+  train_terms: data/raw/train_terms.tsv
+  train_taxonomy: data/raw/train_taxonomy.tsv
+  test_sequences: data/raw/testsuperset.fasta
+  go_obo: resources/go-basic.obo
+  ia_weights: resources/IA.tsv
+
+features:
+  kmer_k: 3
+  tfidf_max_features: 200000
+  use_physchem: true
+  top_go_terms: 1500
+
+model:
+  lr_C: 1.0
+  use_embeddings: false
+  knn_neighbors: 7
+  knn_metric: cosine
+  batch_size: 2048
+
+optuna:
+  n_trials: 100
+  pruning: true
+  study_name: cafa6_optimization
+  storage: sqlite:///experiments/optuna.db
+
+eval:
+  ia_file: resources/ia.json
+  identity_threshold: 0.7
+  threshold_min: 0.01
+  threshold_max: 0.99
+  threshold_steps: 100
+
+ensemble:
+  knn_weight: 0.32
+  blast_weight: 0.68
+  top_predictions_per_protein: 1500
+  min_score_threshold: 0.07
+
+logging:
+  level: INFO
+  mlflow_tracking_uri: experiments/mlflow
+  save_per_term_breakdown: true
+  top_terms_to_log: 100
+
+reproducibility:
+  seed: 42
+  deterministic: true
