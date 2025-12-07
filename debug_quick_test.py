@@ -4,6 +4,7 @@ Quick debug script to verify the pipeline works on a small subset.
 Tests: data loading, feature extraction, model training, scoring.
 """
 
+import os
 import numpy as np
 from src.data.ingest import load_sequences, load_terms, get_top_go_terms, prepare_labels
 from src.features.tfidf_kmers import TfidfKmerFeaturizer
@@ -95,23 +96,55 @@ print("=" * 60)
 scorer = CafaScorer()
 
 # LR results
+print(f"\n[INFO] Applying GO Hierarchy Propagation (True-Path Rule)...")
+from src.score.hierarchy import GOHierarchy, apply_hierarchy_propagation
+
+# Load hierarchy
+obo_path = config["data"]["go_obo"]
+if os.path.exists(obo_path):
+    print(f"  Loading OBO from: {obo_path}")
+    hierarchy = GOHierarchy(obo_path)
+
+    # Map raw indices to terms
+    idx2term = {v: k for k, v in go2idx.items()}
+    term_list = [idx2term[i] for i in range(len(go2idx))]
+    # term_to_idx for hierarchy class is exactly go2idx
+
+    # Propagate scores
+    print("  Propagating LR scores...")
+    pred_lr_prop = hierarchy.propagate_max(pred_lr, go2idx)
+
+    print("  Propagating KNN scores...")
+    pred_knn_prop = hierarchy.propagate_max(pred_knn, go2idx)
+else:
+    print(f"  [WARNING] OBO file not found at {obo_path}, skipping propagation.")
+    pred_lr_prop = pred_lr
+    pred_knn_prop = pred_knn
+
+# LR results
 result_lr = scorer.score(y_val, pred_lr)
-print(f"\nLogistic Regression:")
+result_lr_prop = scorer.score(y_val, pred_lr_prop)
+
+print(f"\nLogistic Regression (Raw):")
 print(f"  F-Max:     {result_lr.f1:.4f}")
 print(f"  Threshold: {result_lr.tau:.4f}")
-print(f"  Precision: {result_lr.weighted_precision:.4f}")
-print(f"  Recall:    {result_lr.weighted_recall:.4f}")
+
+print(f"Logistic Regression (Propagated):")
+print(f"  F-Max:     {result_lr_prop.f1:.4f}")
+print(f"  Threshold: {result_lr_prop.tau:.4f}")
+print(f"  Delta:     {result_lr_prop.f1 - result_lr.f1:+.4f}")
 
 # KNN results
 result_knn = scorer.score(y_val, pred_knn)
-print(f"\nKNN Transfer:")
+result_knn_prop = scorer.score(y_val, pred_knn_prop)
+
+print(f"\nKNN Transfer (Raw):")
 print(f"  F-Max:     {result_knn.f1:.4f}")
-print(f"  Threshold: {result_knn.tau:.4f}")
-print(f"  Precision: {result_knn.weighted_precision:.4f}")
-print(f"  Recall:    {result_knn.weighted_recall:.4f}")
+print(f"KNN Transfer (Propagated):")
+print(f"  F-Max:     {result_knn_prop.f1:.4f}")
 
 # Ensemble
-ensemble = 0.7 * pred_lr + 0.3 * pred_knn
+ensemble = 0.7 * pred_lr_prop + 0.3 * pred_knn_prop
 result_ens = scorer.score(y_val, ensemble)
 print(f"\nEnsemble (0.7*LR + 0.3*KNN):")
 print(f"  F-Max:     {result_ens.f1:.4f}")

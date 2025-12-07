@@ -479,6 +479,19 @@ knn_weight = 0.32
 lr_weight = 1.0 - knn_weight
 combined = lr_weight * pred_lr + knn_weight * pred_knn
 
+# Apply Hierarchy Propagation
+from src.score.hierarchy import GOHierarchy
+import os
+
+obo_path = config['data']['go_obo']
+if os.path.exists(obo_path):
+    print(f'Applying hierarchy propagation (OBO: {obo_path})...')
+    hierarchy = GOHierarchy(obo_path)
+    term_to_idx = {term: i for i, term in enumerate(go_terms)}
+    combined = hierarchy.propagate_max(combined, term_to_idx)
+else:
+    print('WARNING: OBO file not found, skipping hierarchy propagation.')
+
 print('Writing submission...')
 with open('submission.tsv', 'w') as f:
     for i, pid in enumerate(test_ids):
