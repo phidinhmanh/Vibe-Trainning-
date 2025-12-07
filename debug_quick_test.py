@@ -19,10 +19,24 @@ print("=" * 60)
 
 set_seed(42)
 
+import os
+from pathlib import Path
+
+# Path fallback logic
+kaggle_input = Path("../kaggle/input")
+if kaggle_input.exists():
+    print(f"[INFO] Using Kaggle data at {kaggle_input}")
+    seq_path = kaggle_input / "Train/train_sequences.fasta"
+    term_path = kaggle_input / "Train/train_terms.tsv"
+else:
+    print("[INFO] Using local data at data/raw")
+    seq_path = "data/raw/train_sequences.fasta"
+    term_path = "data/raw/train_terms.tsv"
+
 # 1. Load small subset of data
 print("\n[1/6] Loading data (first 500 sequences)...")
-sequences = load_sequences("data/raw/train_sequences.fasta")
-terms_df = load_terms("data/raw/train_terms.tsv")
+sequences = load_sequences(str(seq_path))
+terms_df = load_terms(str(term_path))
 
 # Take only first 500 sequences for quick test
 protein_ids = list(sequences.keys())[:500]

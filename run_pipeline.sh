@@ -85,10 +85,29 @@ fi
 check_data() {
     log_info "Checking data files..."
     
+    # Detect data directory
+    if [ -d "../kaggle/input/Train" ]; then
+        echo "[INFO] Detected Kaggle environment"
+        DATA_ROOT="../kaggle/input"
+        TRAIN_DIR="$DATA_ROOT/Train"
+        TEST_DIR="$DATA_ROOT/Test"
+        IA_FILE="$DATA_ROOT/IA.tsv"
+    else
+        echo "[INFO] Using local environment (data/raw)"
+        DATA_ROOT="data/raw"
+        TRAIN_DIR="$DATA_ROOT"
+        TEST_DIR="$DATA_ROOT"
+        IA_FILE="$DATA_ROOT/cafa-6-protein-function-prediction/IA.tsv"
+        # Handle flattened structure if files are directly in data/raw
+        if [ -f "$DATA_ROOT/IA.tsv" ]; then
+             IA_FILE="$DATA_ROOT/IA.tsv"
+        fi
+    fi
+
     REQUIRED_FILES=(
-        "data/raw/train_sequences.fasta"
-        "data/raw/train_terms.tsv"
-        "data/raw/testsuperset.fasta"
+        "$TRAIN_DIR/train_sequences.fasta"
+        "$TRAIN_DIR/train_terms.tsv"
+        "$TEST_DIR/testsuperset.fasta"
     )
     
     MISSING=false
@@ -100,7 +119,7 @@ check_data() {
     done
     
     if [ "$MISSING" = true ]; then
-        log_error "Please download data from Kaggle and place in data/raw/"
+        log_error "Data not found in either ../kaggle/input or data/raw"
         exit 1
     fi
     
